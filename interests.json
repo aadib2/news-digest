@@ -1,0 +1,33 @@
+{
+  "primary_interests": {
+    "machine_learning": 0.35,
+    "data_science": 0.25,
+    "data_engineering": 0.20,
+    "general_tech": 0.20
+  },
+  "high_interest_keywords": [
+    "LLM", "large language model", "RAG", "retrieval augmented generation",
+    "finetuning", "fine-tuning", "transformer", "neural network",
+    "deep learning", "reinforcement learning", "RLHF",
+    "diffusion model", "embedding", "vector database",
+    "data pipeline", "ETL", "dbt", "Apache Spark", "Kafka",
+    "distributed computing", "feature store", "data warehouse",
+    "MLOps", "model deployment", "inference", "quantization",
+    "pandas", "polars", "scikit-learn", "PyTorch", "JAX",
+    "computer vision", "NLP", "multimodal", "foundation model",
+    "agentic", "agent", "benchmark"
+  ],
+  "low_interest_keywords": [
+    "crypto", "blockchain", "Web3", "NFT", "metaverse",
+    "celebrity", "sports", "gaming", "social media drama"
+  ],
+  "preferred_sources_ranked": [
+    "Towards Data Science",
+    "ArXiv",
+    "GitHub Trending",
+    "HackerNews",
+    "Dev.to"
+  ],
+  "max_articles_per_digest": 8,
+  "min_relevance_score": 55
+}
