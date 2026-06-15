@@ -1,0 +1,122 @@
+{
+  "upvoted": [],
+  "downvoted": [],
+  "saved": [],
+  "message_article_map": {
+    "1513812485461905448": {
+      "title": "Can Machine Learning Predict the World Cup?",
+      "url": "https://towardsdatascience.com/can-machine-learning-predict-the-world-cup/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1513812510854090912": {
+      "title": "Increase Recommendation Systems\u2019 Precision with LLMs, Using Python",
+      "url": "https://towardsdatascience.com/increase-recommendation-systems-precision-with-llm-using-python/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1513812538679365682": {
+      "title": "How to Keep Quantum Information Alive for Machine Learning",
+      "url": "https://towardsdatascience.com/how-to-keep-quantum-information-alive-for-machine-learning/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1513812570555814080": {
+      "title": "4 New Techniques to Maximize Claude Code",
+      "url": "https://towardsdatascience.com/4-new-techniques-to-maximize-claude-code/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1513812598850719764": {
+      "title": "Sequential Fitting: A Different Perspective on the Spectral Bias of Neural Networks",
+      "url": "https://towardsdatascience.com/sequential-fitting-a-different-perspective-on-the-spectral-bias-of-neural-networks/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1513812629104234516": {
+      "title": "The Polynomial That Fixed 30 Years of Cloth Simulation",
+      "url": "https://towardsdatascience.com/the-polynomial-that-fixed-30-years-of-cloth-simulation/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1513812655088078878": {
+      "title": "Offline Reinforcement Learning for Plasma Control in Nuclear Fusion: Codebase and Benchmark",
+      "url": "https://arxiv.org/abs/oai:arXiv.org:2606.07550v1",
+      "source": "ArXiv",
+      "category": "cs.LG",
+      "relevance_score": 0
+    },
+    "1513812679268106353": {
+      "title": "MedicalRec: Medical recommender system for image classification without retraining",
+      "url": "https://arxiv.org/abs/oai:arXiv.org:2606.07553v1",
+      "source": "ArXiv",
+      "category": "cs.LG",
+      "relevance_score": 0
+    },
+    "1514147909325688852": {
+      "title": "10 Common RAG Mistakes We Keep Seeing in Production",
+      "url": "https://towardsdatascience.com/10-common-rag-mistakes-we-keep-seeing-in-production/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1514147931912146974": {
+      "title": "The Hardware That Makes AI Possible",
+      "url": "https://towardsdatascience.com/the-hardware-that-makes-ai-possible/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1514147955509170249": {
+      "title": "Prefill Once, Fan Out: KV Snapshot Sharing for Multi-Agent LLM Pipelines",
+      "url": "https://towardsdatascience.com/kv-cache-reuse-for-multi-agent-llm-inference-i-built-a-c-orchestrator-so-my-gpu-would-stop-reading-the-same-document-twice/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1514147976048672880": {
+      "title": "The Exact ML Project I\u2019d Build to Get Hired in 2026",
+      "url": "https://towardsdatascience.com/the-exact-ml-project-that-gets-you-hired-full-breakdown/",
+      "source": "Towards Data Science",
+      "category": "",
+      "relevance_score": 0
+    },
+    "1514147997632696442": {
+      "title": "Mechanistic Analysis of Alignment Algorithms in Language Models",
+      "url": "https://arxiv.org/abs/oai:arXiv.org:2606.09850v1",
+      "source": "ArXiv",
+      "category": "cs.LG",
+      "relevance_score": 0
+    },
+    "1514148020336197652": {
+      "title": "SynIB: Informational Bottleneck for Maximizing Synergy in Multimodal Learning",
+      "url": "https://arxiv.org/abs/oai:arXiv.org:2606.09853v1",
+      "source": "ArXiv",
+      "category": "cs.LG",
+      "relevance_score": 0
+    },
+    "1514148043480629341": {
+      "title": "Uncertainty-aware Multi-fidelity Closure via Conditional Normalizing Flows",
+      "url": "https://arxiv.org/abs/oai:arXiv.org:2606.09857v1",
+      "source": "ArXiv",
+      "category": "cs.LG",
+      "relevance_score": 0
+    },
+    "1514148066570010688": {
+      "title": "Mitigating Manifold Departure: Uncertainty-Aware Subspace Rectification for Trustworthy MLLM Decoding",
+      "url": "https://arxiv.org/abs/oai:arXiv.org:2606.09859v1",
+      "source": "ArXiv",
+      "category": "cs.LG",
+      "relevance_score": 0
+    }
+  },
+  "upvoted_count": 0,
+  "downvoted_count": 0,
+  "saved_count": 0
+}

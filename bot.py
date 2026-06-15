@@ -21,10 +21,11 @@ from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-import feedback_store
-from news_fetcher import NewsFetcher
-from curator_agent import CuratorAgent
-from summarizer_agent import SummarizerAgent
+import agent.feedback_store as feedback_store
+from agent.news_fetcher import NewsFetcher
+from agent.curator_agent import CuratorAgent
+from agent.summarizer_agent import SummarizerAgent
+import aiohttp
 
 load_dotenv()
 
@@ -42,9 +43,9 @@ with open("interests.json") as f:
 # Category colours & emojis for Discord embeds
 # ─────────────────────────────────────────────
 CATEGORY_META = {
-    "machine_learning":  {"emoji": "🤖", "color": discord.Color.purple()},
+    "machine_learning / AI":  {"emoji": "🤖", "color": discord.Color.purple()},
     "data_science":      {"emoji": "📊", "color": discord.Color.blue()},
-    "data_engineering":  {"emoji": "⚙️",  "color": discord.Color.orange()},
+    "software_engineering":  {"emoji": "⚙️",  "color": discord.Color.orange()},
     "general_tech":      {"emoji": "💡", "color": discord.Color.green()},
 }
 DEFAULT_META = {"emoji": "📰", "color": discord.Color.greyple()}
@@ -66,6 +67,26 @@ summarizer = SummarizerAgent()
 scheduler = AsyncIOScheduler(timezone="America/Los_Angeles")
 
 
+# Shared aiohttp session (created on ready)
+aiohttp_session = None
+
+
+async def _close_aiohttp_session():
+    """Properly close the shared aiohttp session."""
+    global aiohttp_session
+    if aiohttp_session is not None and not aiohttp_session.closed:
+        await aiohttp_session.close()
+        print("[Bot] Closed shared aiohttp session")
+
+
+@bot.event
+async def on_close():
+    """Called when the bot is shutting down."""
+    await _close_aiohttp_session()
+    scheduler.shutdown(wait=False)
+    print("[Bot] Scheduler shut down")
+
+
 # ─────────────────────────────────────────────
 # Core: build and send the digest
 # ─────────────────────────────────────────────
@@ -77,7 +98,7 @@ async def send_digest(channel: discord.TextChannel):
         title="📰 Tech News Digest",
         description=(
             "Your daily curated digest across **AI/ML**, **Data Science**, "
-            "**Data Engineering**, and **General Tech**.\n\n"
+            "**Software Engineering**, and **General Tech**.\n\n"
             "React with 👍 upvote · 👎 downvote · 🔖 save"
         ),
         color=discord.Color.gold(),
@@ -88,7 +109,7 @@ async def send_digest(channel: discord.TextChannel):
 
     # Fetch
     await channel.send("⏳ Fetching articles...", delete_after=10)
-    articles = fetcher.fetch_all()
+    articles = await fetcher.fetch_all(session=aiohttp_session)
 
     if not articles:
         await channel.send("⚠️ No articles fetched today. Check source connectivity.")
@@ -96,7 +117,7 @@ async def send_digest(channel: discord.TextChannel):
 
     # Curate
     feedback_summary = feedback_store.get_summary()
-    curated = curator.rank_articles(articles, feedback_summary)
+    curated = await curator.rank_articles(articles, feedback_summary)
 
     if not curated:
         await channel.send("⚠️ No articles passed the relevance threshold today.")
@@ -106,7 +127,7 @@ async def send_digest(channel: discord.TextChannel):
     for i, article in enumerate(curated, start=1):
         meta = CATEGORY_META.get(article.get("category", ""), DEFAULT_META)
 
-        summary_text = summarizer.summarize(article)
+        summary_text = await summarizer.summarize(article)
 
         embed = discord.Embed(
             title=f"{meta['emoji']} {article['title'][:200]}",
@@ -133,9 +154,9 @@ async def send_digest(channel: discord.TextChannel):
 
         msg = await channel.send(embed=embed)
 
-        # Add reaction buttons
-        for emoji in ("👍", "👎", "🔖"):
-            await msg.add_reaction(emoji)
+        # # Add reaction buttons
+        # for emoji in ("👍", "👎", "🔖"):
+        #     await msg.add_reaction(emoji)
 
         # Store message → article mapping for feedback tracking
         feedback_store.register_message(msg.id, article)
@@ -171,6 +192,12 @@ async def on_ready():
     )
     scheduler.start()
     print(f"[Bot] Scheduler started → daily digest at {DIGEST_HOUR:02d}:00")
+    # Create shared aiohttp session
+    global aiohttp_session
+    if aiohttp_session is None:
+        connector = aiohttp.TCPConnector(limit=20)
+        aiohttp_session = aiohttp.ClientSession(connector=connector)
+        print("[Bot] Created shared aiohttp session")
 
 
 async def _scheduled_digest():

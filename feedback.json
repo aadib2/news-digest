@@ -1,0 +1,66 @@
+{
+  "upvoted": [],
+  "downvoted": [],
+  "saved": [],
+  "message_article_map": {
+    "1515876380468969666": {
+      "title": "Vision LLMs are PDF Parsers Too: Reading Charts and Diagrams for RAG",
+      "url": "https://towardsdatascience.com/vision-llms-are-pdf-parsers-too-reading-charts-and-diagrams-for-rag/",
+      "source": "Towards Data Science",
+      "category": "machine_learning / AI",
+      "relevance_score": 92
+    },
+    "1515876394121433119": {
+      "title": "GPU Time-Slicing for Concurrent LLM Agents on Kubernetes",
+      "url": "https://towardsdatascience.com/gpu-time-slicing-for-concurrent-llm-agents-on-kubernetes/",
+      "source": "Towards Data Science",
+      "category": "software_engineering",
+      "relevance_score": 85
+    },
+    "1515876408306569457": {
+      "title": "[GitHub Trending] FareedKhan-dev/train-llm-from-scratch",
+      "url": "https://github.com/FareedKhan-dev/train-llm-from-scratch",
+      "source": "GitHub Trending",
+      "category": "machine_learning / AI",
+      "relevance_score": 88
+    },
+    "1515876420528640170": {
+      "title": "[GitHub Trending] LMCache/LMCache",
+      "url": "https://github.com/LMCache/LMCache",
+      "source": "GitHub Trending",
+      "category": "machine_learning / AI",
+      "relevance_score": 82
+    },
+    "1515876433623388281": {
+      "title": "[GitHub Trending] Ar9av/obsidian-wiki",
+      "url": "https://github.com/Ar9av/obsidian-wiki",
+      "source": "GitHub Trending",
+      "category": "machine_learning / AI",
+      "relevance_score": 76
+    },
+    "1515876446239985827": {
+      "title": "[GitHub Trending] NVIDIA/SkillSpector",
+      "url": "https://github.com/NVIDIA/SkillSpector",
+      "source": "GitHub Trending",
+      "category": "software_engineering",
+      "relevance_score": 70
+    },
+    "1515876459455971419": {
+      "title": "4 Lines You Should Include in Your Claude Skill",
+      "url": "https://towardsdatascience.com/4-lines-you-must-include-in-your-claude-skill/",
+      "source": "Towards Data Science",
+      "category": "machine_learning / AI",
+      "relevance_score": 68
+    },
+    "1515876472869486714": {
+      "title": "[GitHub Trending] shiyu-coder/Kronos",
+      "url": "https://github.com/shiyu-coder/Kronos",
+      "source": "GitHub Trending",
+      "category": "machine_learning / AI",
+      "relevance_score": 65
+    }
+  },
+  "upvoted_count": 0,
+  "downvoted_count": 0,
+  "saved_count": 0
+}

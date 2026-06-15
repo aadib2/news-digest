@@ -1,5 +1,5 @@
 discord.py==2.3.2
-anthropic==0.25.0
+anthropic>=0.28.0
 requests==2.31.0
 feedparser==6.0.11
 beautifulsoup4==4.12.3
