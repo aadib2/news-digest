@@ -40,7 +40,7 @@ news-digest/
 
 ## Architecture Diagram
 
-![Tech-News-Digest Agent Pipeline](News-Digest Agent.drawio.png)
+<img src="News-Digest Agent.drawio.png" alt="Pipeline Diagram" width="300" />
 
 ---
 
@@ -55,7 +55,7 @@ cd news-digest
 uv sync
 
 # Or with pip
-git clone <your-repo-url>
+git clone https://github.com/aadib2/news-digest.git
 cd news-digest
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
