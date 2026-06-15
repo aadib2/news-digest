@@ -1,36 +1,70 @@
-# Tech Digest Bot — Setup Guide
+# Tech Digest Bot
 
-A daily AI-curated tech news Discord bot, filtered for AI/ML, Data Science, Data Engineering, and General Tech.
+A daily AI-curated tech news Discord bot, filtered for AI/ML, Data Science, Software Engineering, and General Tech.
 
 ---
 
 ## Project Structure
 
 ```
-tech-digest-bot/
-├── bot.py              ← Main entry point
-├── news_fetcher.py     ← All 5 data sources
-├── curator_agent.py    ← Claude ranks articles by relevance
-├── summarizer_agent.py ← Claude writes concise summaries
-├── feedback_store.py   ← Tracks your reactions
-├── interests.json      ← Your interest profile (tweak anytime)
-├── requirements.txt
-├── .env.example        ← Copy to .env and fill in
-└── feedback.json       ← Auto-created at runtime
+news-digest/
+├── bot.py                      ← Main entry point (Discord bot + scheduler)
+├── interests.json              ← Your interest profile (tweak anytime)
+├── requirements.txt            ← Python dependencies
+├── .env.example                ← Copy to .env and fill in
+├── feedback.json               ← Auto-created at runtime (reaction tracking)
+├── logs/
+│   └── curator/                ← Raw Claude responses for debugging (local only)
+├── agent/
+│   ├── __init__.py
+│   ├── news_fetcher.py         ← Fetches from 5+ data sources
+│   ├── curator_agent.py        ← Claude ranks articles by relevance
+│   ├── summarizer_agent.py     ← Claude writes concise summaries
+│   └── feedback_store.py       ← Tracks your reactions (upvote/downvote/save)
+├── test/
+│   ├── test_curator.py         ← Unit tests for curator JSON extraction
+│   └── test_fetcher.py         ← Tests for news fetching
+
 ```
 
 ---
 
-## Step 1: Clone & Install
+## How does it work?
+
+1. **Fetch** — Pulls articles from multiple sources (HackerNews, TLDR, GitHub Trending, Towards Data Science, Reddit) via `NewsFetcher`
+2. **Pre-filter** — Heuristically scores articles using your `high_interest_keywords` / `low_interest_keywords` to reduce token usage (~25 articles)
+3. **Curate** — Sends pre-filtered articles to Claude with your interest profile; Claude returns top 8 ranked by relevance score
+4. **Summarize** — For each selected article, Claude generates a concise 2-3 sentence summary
+5. **Post** — Bot sends formatted embeds to Discord with 👍 👎 🔖 reactions
+6. **Learn** — Your reactions are stored and fed back to the curator as feedback context for future digests
+
+## Architecture Diagram
+
+![Tech-News-Digest Agent Pipeline](News-Digest Agent.drawio.png)
+
+---
+
+## Setup Instructions
+
+### Step 1: Clone & Install
 
 ```bash
-# Install dependencies
+# Using uv (recommended)
+git clone https://github.com/aadib2/news-digest.git
+cd news-digest
+uv sync
+
+# Or with pip
+git clone <your-repo-url>
+cd news-digest
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
 ---
 
-## Step 2: Create Discord Bot
+### Step 2: Create Discord Bot
 
 1. Go to https://discord.com/developers/applications
 2. Click **New Application** → name it (e.g. "TechDigest")
@@ -46,7 +80,7 @@ pip install -r requirements.txt
 
 ---
 
-## Step 3: Get Your Channel ID
+### Step 3: Get Your Channel ID
 
 1. In Discord, go to **User Settings → Advanced → Enable Developer Mode**
 2. Right-click the channel you want digests sent to
@@ -54,7 +88,7 @@ pip install -r requirements.txt
 
 ---
 
-## Step 4: Configure Environment
+### Step 4: Configure Environment
 
 ```bash
 cp .env.example .env
@@ -72,9 +106,13 @@ DIGEST_HOUR=8
 
 ---
 
-## Step 5: Run Locally
+### Step 5: Run Locally
 
 ```bash
+# With uv
+uv run python bot.py
+
+# Or with pip
 python bot.py
 ```
 
@@ -89,22 +127,22 @@ You'll see:
 
 ---
 
-## Step 6: Deploy (So It Runs 24/7)
+### Step 6: Deploy (So It Runs 24/7)
 
-### Option A: Railway (Recommended, free tier)
+#### Option A: Railway (Recommended, free tier)
 1. Push to GitHub
 2. Go to https://railway.app → New Project → Deploy from GitHub
 3. Add environment variables in Railway dashboard
 4. Done — Railway keeps it always on
 
-### Option B: Replit
+#### Option B: Replit
 1. Create a new Python Repl
 2. Upload all files
 3. Add Secrets (equivalent of `.env`)
 4. Run `python bot.py`
 5. Enable "Always On" (Replit paid feature) or use UptimeRobot
 
-### Option C: Your Own Machine
+#### Option C: Your Own Machine
 - Windows: Use Task Scheduler or run in background with `pythonw bot.py`
 - Linux/Mac: Use `screen` or `tmux`: `screen -S digest python bot.py`
 
@@ -136,27 +174,25 @@ Edit `interests.json` to tune what the curator prioritises.
 
 ```json
 {
-  "primary_interests": {
-    "machine_learning": 0.35,   ← Increase to see more ML
-    "data_science": 0.25,
-    "data_engineering": 0.20,
-    "general_tech": 0.20
-  },
   "high_interest_keywords": [
-    "LLM", "RAG", "finetuning", ...  ← Add anything specific
+    "LLM", "RAG", "finetuning", "transformer", "attention", ...
   ],
-  "min_relevance_score": 55   ← Lower to see more articles, raise to be stricter
+  "low_interest_keywords": [
+    "crypto", "blockchain", "web3", "NFT", ...
+  ],
+  "max_articles_per_digest": 8,
+  "min_relevance_score": 55,
+  "prefilter_limit": 25
 }
 ```
 
----
-
-## Extending Later (Phase 1B)
-
-To add **Andrew Ng's The Batch**:
-1. Set up Gmail App Password in Google Account settings
-2. Add `GMAIL_EMAIL` and `GMAIL_PASSWORD` to `.env`
-3. Implement `TheBatchFetcher` from the data sources document
+| Setting | Description |
+|---------|-------------|
+| `high_interest_keywords` | Boost articles containing these terms |
+| `low_interest_keywords` | Penalize articles containing these terms |
+| `max_articles_per_digest` | Max articles to show per digest (default 8) |
+| `min_relevance_score` | Minimum score to include (0-100, default 55) |
+| `prefilter_limit` | Articles sent to Claude after keyword filtering (default 25) |
 
 ---
 
@@ -172,6 +208,10 @@ To add **Andrew Ng's The Batch**:
 - Lower `min_relevance_score` in `interests.json` (try 40)
 - Check your `ANTHROPIC_API_KEY` is valid
 
-**Dev.to / GitHub Trending returns nothing**
+**GitHub Trending returns nothing**
 - These occasionally go down; other sources will still work
 - Check your internet connection if all sources fail
+
+**JSON parse errors in curator**
+- Check `logs/curator/` for raw Claude responses
+- Usually caused by token truncation — reduce `prefilter_limit` or increase `max_tokens` in curator_agent.py
