@@ -87,7 +87,7 @@ class ArxivFetcher:
             try:
                 feed = await fetch_rss_feed(url, session)
                 for entry in feed.entries[: self.MAX_PER_CATEGORY]:
-                    paper_id = entry.id.split("/abs/")[-1]
+                    paper_id = entry.link.split("/abs/")[-1]
                     if paper_id in seen_ids:
                         continue
                     seen_ids.add(paper_id)
@@ -99,7 +99,7 @@ class ArxivFetcher:
 
                     papers.append({
                         "title": entry.title.replace("\n", " ").strip(),
-                        "url": f"https://arxiv.org/abs/{paper_id}",
+                        "url": entry.link,
                         "summary": abstract,
                         "authors": entry.get("author", ""),
                         "source": "ArXiv",
