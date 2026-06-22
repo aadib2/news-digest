@@ -42,11 +42,12 @@ class SummarizerAgent:
         Content preview: {article.get('summary', 'No preview available.')[:400]}
 
         Write:
-        1. A 2-3 sentence technical summary (what is it, what does it do/show?)
-        2. One sentence: "**Why it matters:**" followed by the key takeaway for an ML/data engineer
+        1. A 2-3 sentence technical summary (what is it, what does it do/show?) - title this "Technical Summary"
+        2. One sentence: "**Why it matters:**" followed by the key takeaway for an ML/AI or data engineer.
 
         Rules:
         - Be concise and specific, not vague
+        - If there is no preview available, fall back to stating "No preview available - check link for more info."
         - Use technical language freely
         - Do NOT restate the title
         - Do NOT include the URL

@@ -186,7 +186,7 @@ async def on_ready():
     # Schedule daily digest
     scheduler.add_job(
         _scheduled_digest,
-        CronTrigger(hour=DIGEST_HOUR, minute=0),
+        CronTrigger(day_of_week='mon-fri', hour=DIGEST_HOUR, minute=0, timezone=scheduler.timezone),
         id="daily_digest",
         replace_existing=True,
     )

@@ -11,7 +11,7 @@ from typing import Dict, List
 from collections import Counter
 
 
-FEEDBACK_FILE = "feedback.json"
+FEEDBACK_FILE = os.getenv("FEEDBACK_PATH", "/data/feedback.json")
 
 _DEFAULT = {
     "upvoted": [],

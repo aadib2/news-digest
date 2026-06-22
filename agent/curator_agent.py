@@ -10,6 +10,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict
+import re
 
 # Prefer AsyncAnthropic if available; otherwise fall back to sync Anthropic and run in thread
 try:
@@ -44,33 +45,44 @@ class CuratorAgent:
     def _prefilter_articles(self, articles: List[Dict], limit: int = None) -> List[Dict]:
         """
         Score articles by keyword relevance, return top `limit`.
-        Uses existing high/low interest keywords from config.
+        Uses high/medium/low interest keywords from config.
         """
         if limit is None:
             limit = self.prefilter_limit
-        
-        # if you have less than or equal to 'limit' of articles then no need to prefilter
+
         if len(articles) <= limit:
             return articles
-        
-        high_kw = set(k.lower() for k in self.interests.get('high_interest_keywords', []))
-        low_kw = set(k.lower() for k in self.interests.get('low_interest_keywords', []))
-        
+
+        high_kw = [k.lower() for k in self.interests.get('high_interest_keywords', [])]
+        med_kw = [k.lower() for k in self.interests.get('medium_interest_keywords', [])]
+        low_kw = [k.lower() for k in self.interests.get('low_interest_keywords', [])]
+
+        def make_pattern(keywords):
+            # word-boundary match per keyword, case-insensitive, compiled once
+            escaped = [re.escape(k) for k in keywords]
+            return re.compile(r'\b(' + '|'.join(escaped) + r')\b', re.IGNORECASE) if escaped else None # ensures we just match whole words
+
+        high_pat = make_pattern(high_kw)
+        med_pat = make_pattern(med_kw)
+        low_pat = make_pattern(low_kw)
+
         def score(article):
-            text = (article.get('title', '') + ' ' + article.get('summary', '')).lower()
+            title = article.get('title', '')
+            summary = article.get('summary', '')
+
             s = 0
-            # Title matches weighted higher
-            title_lower = article.get('title', '').lower()
-            for kw in high_kw:
-                if kw in title_lower:
-                    s += 3
-                elif kw in text:
-                    s += 1
-            for kw in low_kw:
-                if kw in text:
-                    s -= 1
+            if high_pat:
+                s += 3 * len(high_pat.findall(title))
+                s += 1 * len(high_pat.findall(summary))
+            if med_pat:
+                s += 1.5 * len(med_pat.findall(title))
+                s += 0.5 * len(med_pat.findall(summary))
+            if low_pat:
+                s -= 2 * len(low_pat.findall(title))
+                s -= 1 * len(low_pat.findall(summary))
+
             return s
-        
+
         scored = sorted(articles, key=score, reverse=True)
         return scored[:limit]
 
@@ -188,8 +200,9 @@ Use this to nudge relevance scores accordingly. If values are empty or 0, then i
 
         prompt = f"""
 USER INTERESTS:
-- Primary: machine_learning / AI (30%), data_science (30%), software_engineering (25%), general_tech (15%)
-- High interest keywords: {', '.join(self.interests['high_interest_keywords'][:20])}
+- Primary: machine_learning / AI (30%), data_science (25%), software_engineering (25%), general_tech (20%)
+- High interest keywords: {', '.join(self.interests['high_interest_keywords'])}
+- Medium interest keywords: {', '.join(self.interests['medium_interest_keywords'])}
 - Low interest keywords: {', '.join(self.interests['low_interest_keywords'])}
 {feedback_ctx}
 
@@ -229,7 +242,7 @@ Example format:
                     self.client.messages.create,
                     {
                         "model": "claude-haiku-4-5",
-                        "max_tokens": 1500,
+                        "max_tokens": 2000,
                         "cache_control": {"type": "ephemeral"},
                         "system": system_prompt,
                         "messages": [{"role": "user", "content": prompt}],
