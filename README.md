@@ -24,7 +24,7 @@ news-digest/
 ├── test/
 │   ├── test_curator.py         ← Unit tests for curator JSON extraction
 │   └── test_fetcher.py         ← Tests for news fetching
-
+└──
 ```
 
 ---

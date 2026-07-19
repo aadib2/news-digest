@@ -76,6 +76,7 @@ async def test_curator_ranking():
                 print(f"    Category: {article.get('category', 'N/A')}")
                 print(f"    Reason: {article.get('reason', 'N/A')}")
                 print(f"    Source: {article['source']}")
+                print(f"    Reading Time: {article['reading_time']}")
                 print()
         else:
             print("⚠️  No articles passed the relevance threshold.")

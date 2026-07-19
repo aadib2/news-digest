@@ -57,7 +57,7 @@
     "edge AI",
     "AI for social good"
   ],
-  "low_interest_keywords": [
+"low_interest_keywords": [
     "crypto",
     "blockchain",
     "Web3",
@@ -83,5 +83,8 @@
     "GitHub Trending": "open-source projects and developer tools"
   },
   "max_articles_per_digest": 8,
-  "min_relevance_score": 55
+  "candidate_pool_size": 15,
+  "max_per_source": 3,
+  "min_relevance_score": 55,
+  "prefilter_limit": 25
 }

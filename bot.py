@@ -154,7 +154,7 @@ async def send_digest(channel: discord.TextChannel):
 
         msg = await channel.send(embed=embed)
 
-        # # Add reaction buttons
+        # Bot add reaction buttons (unnecessary now)
         # for emoji in ("👍", "👎", "🔖"):
         #     await msg.add_reaction(emoji)
 

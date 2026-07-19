@@ -38,7 +38,9 @@ class CuratorAgent:
         self.interests = interests
         self.max_articles = interests.get("max_articles_per_digest", 8)
         self.min_score = interests.get("min_relevance_score", 55)
-        self.prefilter_limit = interests.get("prefilter_limit", 25) # set pre-filter limit to 25
+        self.prefilter_limit = interests.get("prefilter_limit", 25)
+        self.candidate_pool_size = interests.get("candidate_pool_size", 15)
+        self.max_per_source = interests.get("max_per_source", 3)
         self._log_dir = Path("logs/curator")
         self._log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -191,10 +193,11 @@ Use this to nudge relevance scores accordingly. If values are empty or 0, then i
             "Your ONLY output must be a single raw JSON array. Do NOT output any prose, markdown, code fences, or explanations. "
             "If you cannot produce the normal array, return a single-element array with {\"error\": "
             "\"<brief reason>\", \"raw\": \"<original raw response>\"}. "
-            f"Return ONLY the top {self.max_articles} most relevant articles, ranked by relevance_score descending. "
+            f"Return the top {self.candidate_pool_size} most relevant articles, ranked by relevance_score descending. "
             "Each array element must be an object with fields: title (string), url (string), source (string), "
             "category (one of: \"machine_learning / AI\", \"data_science\", \"software_engineering\", \"general_tech\"), "
-            "relevance_score (integer 0-100), reason (one short sentence). "
+            "relevance_score (integer 0-100), reason (one short sentence), "
+            "reading_time (one of: \"quick\" < 5 min, \"medium\" 5-15 min, \"deep\" > 15 min). "
             "Use double quotes for strings and valid JSON."
         )
 
@@ -207,7 +210,9 @@ USER INTERESTS:
 {feedback_ctx}
 
 TASK:
-Select and rank the top {self.max_articles} most relevant articles for this user. Be selective and critical.
+Select and rank the top {self.candidate_pool_size} most relevant articles for this user. Be selective and critical.
+Aim for a balanced mix of sources (max {self.max_per_source} per source) and reading depths (quick reads, medium articles, deep-dive papers).
+Prefer lighter reads and blog posts over dense papers when relevance is comparable.
 
 For each article return:
 - title: exact title from input
@@ -216,22 +221,24 @@ For each article return:
 - category: one of [machine_learning / AI, data_science, software_engineering, general_tech]
 - relevance_score: integer 0-100
 - reason: one short sentence explaining the score
+- reading_time: one of ["quick", "medium", "deep"] — quick = < 5 min, medium = 5-15 min, deep = > 15 min
 
 Only include articles with relevance_score >= {self.min_score}.
-If fewer than {self.max_articles} articles meet the threshold, return only those that do.
+If fewer than {self.candidate_pool_size} articles meet the threshold, return only those that do.
 
 ARTICLES:
 {json.dumps(slim_articles, indent=2)}
 
 Return ONLY a valid JSON array. No markdown, no explanation, no preamble.
 Example format:
-[{{\"title\": \"Article Title\", \"url\": \"https://example.com\", \"source\": \"Example\", \"category\": \"machine_learning / AI\", \"relevance_score\": 82, \"reason\": \"Introduces a novel finetuning approach for LLMs.\"}}]"""
+[{{\"title\": \"Article Title\", \"url\": \"https://example.com\", \"source\": \"Example\", \"category\": \"machine_learning / AI\", \"relevance_score\": 82, \"reason\": \"Introduces a novel finetuning approach for LLMs.\", \"reading_time\": \"medium\"}}]"""
 
         try:
+            raw = None
             if _ANTHROPIC_ASYNC:
                 response = await self.client.messages.create(
                     model="claude-haiku-4-5-20251001",
-                    max_tokens=2000,
+                    max_tokens=5000,
                     cache_control={"type": "ephemeral"},
                     system=system_prompt,
                     messages=[{"role": "user", "content": prompt}],
@@ -242,7 +249,7 @@ Example format:
                     self.client.messages.create,
                     {
                         "model": "claude-haiku-4-5",
-                        "max_tokens": 2000,
+                        "max_tokens": 5000,
                         "cache_control": {"type": "ephemeral"},
                         "system": system_prompt,
                         "messages": [{"role": "user", "content": prompt}],
@@ -287,7 +294,43 @@ Example format:
                 full["relevance_score"] = ranked["relevance_score"]
                 full["category"] = ranked["category"]
                 full["reason"] = ranked["reason"]
+                full["reading_time"] = ranked.get("reading_time", "medium")
                 enriched.append(full)
+
+        # Apply source diversity and reading-depth balance
+        enriched = self._balance_selection(enriched)
 
         print(f"[Curator] Ranked {len(enriched)} relevant articles → returning top {len(enriched)}")
         return enriched
+
+    def _balance_selection(self, articles: List[Dict]) -> List[Dict]:
+        """
+        Enforce max_per_source and encourage a mix of reading_time buckets.
+        Does not re-rank; just filters down to limits while preserving score order.
+        """
+        if not articles:
+            return articles
+
+        max_per = self.max_per_source
+
+        # 1) Cap per source
+
+        # group articles by source
+        by_source: Dict[str, List[Dict]] = {}
+        for a in articles:
+            by_source.setdefault(a["source"], []).append(a)
+
+        capped = []
+        for src, src_articles in by_source.items():
+            capped.extend(src_articles[:max_per])
+
+        # 2) Try to ensure at least 1 "quick" and 1 "deep" if available, without dropping top score
+        # If we have too many deep reads and not enough quick/medium, demote the lowest-scoring deep reads
+        depth_order = {"quick": 0, "medium": 1, "deep": 2}
+        capped.sort(key=lambda a: (depth_order.get(a.get("reading_time", "medium"), 1), -a["relevance_score"]))
+
+        # If we're at or over max_articles, trim excess while preserving depth diversity
+        if len(capped) > self.max_articles:
+            capped = capped[:self.max_articles]
+
+        return capped
