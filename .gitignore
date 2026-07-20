@@ -10,3 +10,8 @@ wheels/
 .venv
 
 .env
+
+# database files
+*.db
+*.db-shm
+*.db-wal

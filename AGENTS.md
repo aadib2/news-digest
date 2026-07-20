@@ -54,13 +54,11 @@ A daily AI-curated tech news Discord bot using Claude for content ranking and su
 
 ### Setup & Run
 - `uv sync` - Install deps (recommended)
-- OR `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
 - `uv run python bot.py` - Run bot locally
-- OR `python3 bot.py`
 
 ### Tests
-- `python3 -m test/test_curator.py` - Test curator agent. Run in project root. Needs `ANTHROPIC_API_KEY` for ranking tests.
-- `python3 -m test/test_fetcher.py [tds|arxiv|hn|github|tldr|all]` - Test fetcher (single or all). Also run in project root. Requires internet connection.
+- `uv run python -m test.test_curator` - Test curator agent. Run in project root. Needs `ANTHROPIC_API_KEY` for ranking tests.
+- `uv run python -m test.test_fetcher [tds|arxiv|hn|github|tldr|all]` - Test fetcher (single or all). Also run in project root. Requires internet connection.
 - All tests run with Python 3.12+
 
 ## Environment

@@ -335,20 +335,15 @@ class NewsFetcher:
             except Exception:
                 return url or ""
 
-        # Load feedback.json to avoid resending articles already sent (if available)
+        # Load previously sent article URLs for deduplication (uses SQLite DB)
         feedback_urls = set()
         try:
-            fb_path = os.path.join(os.path.dirname(__file__), "feedback.json")
-            if os.path.exists(fb_path):
-                with open(fb_path, "r") as f:
-                    fb = __import__("json").load(f)
-                    mam = fb.get("message_article_map", {})
-                    for v in mam.values():
-                        u = v.get("url")
-                        if u:
-                            feedback_urls.add(normalize_url(u))
+            from feedback_store import get_sent_urls
+            sent_urls = get_sent_urls()
+            feedback_urls = {normalize_url(u) for u in sent_urls}
+            print(f"[NewsFetcher] Loaded {len(feedback_urls)} previously-sent URLs from feedback DB")
         except Exception as e:
-            print(f"[NewsFetcher] Warning: couldn't read feedback.json: {e}")
+            print(f"[NewsFetcher] Warning: couldn't load sent URLs from feedback DB: {e}")
 
         seen = set()
         deduped = []

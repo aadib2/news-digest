@@ -12,19 +12,20 @@ news-digest/
 ├── interests.json              ← Your interest profile (tweak anytime)
 ├── requirements.txt            ← Python dependencies
 ├── .env.example                ← Copy to .env and fill in
-├── feedback.json               ← Auto-created at runtime (reaction tracking)
+├── data/
+│   └── feedback.db             ← Auto-created at runtime (SQLite, persisted on Railway volume)
 ├── logs/
 │   └── curator/                ← Raw Claude responses for debugging (local only)
 ├── agent/
 │   ├── __init__.py
 │   ├── news_fetcher.py         ← Fetches from 5+ data sources
-│   ├── curator_agent.py        ← Claude ranks articles by relevance
-│   ├── summarizer_agent.py     ← Claude writes concise summaries
-│   └── feedback_store.py       ← Tracks your reactions (upvote/downvote/save)
+│   ├── curator_agent.py        ← Claude ranks articles
+│   ├── summarizer_agent.py     ← Claude writes summaries
+│   └── feedback_store.py       ← Tracks your reactions (upvote/downvote/save) in SQLite
 ├── test/
 │   ├── test_curator.py         ← Unit tests for curator JSON extraction
-│   └── test_fetcher.py         ← Tests for news fetching
-└──
+│   ├── test_fetcher.py         ← Tests for news fetching
+│   └── test_feedback_store.py  ← Unit tests for feedback store
 ```
 
 ---
@@ -33,7 +34,7 @@ news-digest/
 
 1. **Fetch** — Pulls articles from multiple sources (HackerNews, TLDR, GitHub Trending, Towards Data Science, Reddit) via `NewsFetcher`
 2. **Pre-filter** — Heuristically scores articles using your `high_interest_keywords` / `low_interest_keywords` to reduce token usage (~25 articles)
-3. **Curate** — Sends pre-filtered articles to Claude with your interest profile; Claude returns top 8 ranked by relevance score
+3. **Curate** — Sends pre-filtered articles to Claude with your interest profile; Claude returns top 8 ranked by relevance score and taking into account reading diversity.
 4. **Summarize** — For each selected article, Claude generates a concise 2-3 sentence summary
 5. **Post** — Bot sends formatted embeds to Discord with 👍 👎 🔖 reactions
 6. **Learn** — Your reactions are stored and fed back to the curator as feedback context for future digests
@@ -100,6 +101,7 @@ DISCORD_BOT_TOKEN=your_bot_token_here
 DISCORD_CHANNEL_ID=your_channel_id_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 DIGEST_HOUR=8
+FEEDBACK_DB_PATH=/data/feedback.db  # Railway volume path (or local path)
 ```
 
 > **ANTHROPIC_API_KEY**: Get yours at https://console.anthropic.com
@@ -133,7 +135,9 @@ You'll see:
 1. Push to GitHub
 2. Go to https://railway.app → New Project → Deploy from GitHub
 3. Add environment variables in Railway dashboard
-4. Done — Railway keeps it always on
+4. **Add a Railway Volume**: Project → Service → Volumes → Add Volume → Mount Path: `/data`
+5. Set `FEEDBACK_DB_PATH=/data/feedback.db` in Railway Variables
+6. Done — Railway keeps it always on
 
 #### Option B: Replit
 1. Create a new Python Repl
@@ -181,6 +185,8 @@ Edit `interests.json` to tune what the curator prioritises.
     "crypto", "blockchain", "web3", "NFT", ...
   ],
   "max_articles_per_digest": 8,
+  "candidate_pool_size": 20,
+  "max_per_source": 3,
   "min_relevance_score": 55,
   "prefilter_limit": 25
 }
@@ -191,6 +197,8 @@ Edit `interests.json` to tune what the curator prioritises.
 | `high_interest_keywords` | Boost articles containing these terms |
 | `low_interest_keywords` | Penalize articles containing these terms |
 | `max_articles_per_digest` | Max articles to show per digest (default 8) |
+| `candidate_pool_size` | How many articles to ask Claude to rank (default 20) |
+| `max_per_source` | Max articles from any single source in final digest (default 3) |
 | `min_relevance_score` | Minimum score to include (0-100, default 55) |
 | `prefilter_limit` | Articles sent to Claude after keyword filtering (default 25) |
 
