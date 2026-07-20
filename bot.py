@@ -8,6 +8,8 @@ Features:
   - Slash commands: /digest, /saved, /stats, /help
   - APScheduler for reliable daily scheduling
 """
+from dotenv import load_dotenv
+load_dotenv()
 
 import asyncio
 import json
@@ -17,7 +19,6 @@ from datetime import datetime, timezone
 import discord
 from discord import app_commands
 from discord.ext import commands
-from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -26,8 +27,6 @@ from agent.news_fetcher import NewsFetcher
 from agent.curator_agent import CuratorAgent
 from agent.summarizer_agent import SummarizerAgent
 import aiohttp
-
-load_dotenv()
 
 # ─────────────────────────────────────────────
 # Config

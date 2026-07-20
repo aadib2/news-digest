@@ -17,9 +17,12 @@ from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 import asyncio
 import aiohttp
 
+# Shared headers for RSS/HTML fetching (bots blocked without browser-like UA)
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; TechDigestBot/1.0)"}
+
 # Helper functions
 async def fetch_rss_feed(url: str, session: aiohttp.ClientSession):
-    async with session.get(url, timeout=10) as r:
+    async with session.get(url, headers=HEADERS, timeout=10) as r:
         r.raise_for_status()
         text = await r.text()
 
@@ -338,7 +341,7 @@ class NewsFetcher:
         # Load previously sent article URLs for deduplication (uses SQLite DB)
         feedback_urls = set()
         try:
-            from feedback_store import get_sent_urls
+            from agent.feedback_store import get_sent_urls
             sent_urls = get_sent_urls()
             feedback_urls = {normalize_url(u) for u in sent_urls}
             print(f"[NewsFetcher] Loaded {len(feedback_urls)} previously-sent URLs from feedback DB")
