@@ -155,11 +155,76 @@ def test_empty_state():
     print("✅ test_empty_state passed")
 
 
+def test_summary_column_and_lookup():
+    """register_message stores generated summary; get_article_by_message returns it."""
+    import sqlite3
+    with sqlite3.connect(TEST_DB) as conn:
+        conn.execute("DELETE FROM reactions")
+        conn.execute("DELETE FROM articles")
+        conn.commit()
+
+    article = {
+        "title": "Test Article",
+        "url": "https://example.com/article",
+        "source": "Test Source",
+        "category": "machine_learning / AI",
+        "relevance_score": 85,
+    }
+    generated = "Technical Summary\n\nUseful stuff.\n\n**Why it matters:** Big deal."
+
+    feedback_store.register_message(999888, article, summary=generated)
+
+    row = feedback_store.get_article_by_message(999888)
+    assert row is not None
+    assert row["title"] == "Test Article"
+    assert row["url"] == "https://example.com/article"
+    assert row["summary"] == generated
+    assert row["relevance_score"] == 85
+    print("✅ test_summary_column_and_lookup passed")
+
+
+def test_get_article_by_message_unknown_id():
+    assert feedback_store.get_article_by_message(424242) is None
+    print("✅ test_get_article_by_message_unknown_id passed")
+
+
+def test_old_schema_migration():
+    """A DB created with the old (summary-less) schema gets the column added."""
+    import sqlite3
+    with sqlite3.connect(TEST_DB) as conn:
+        conn.execute("DROP TABLE IF EXISTS articles")
+        conn.execute("""
+            CREATE TABLE articles (
+                message_id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                url TEXT,
+                source TEXT,
+                category TEXT,
+                relevance_score INTEGER,
+                sent_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        conn.commit()
+
+    feedback_store._ensure_schema()  # must migrate without error
+
+    with sqlite3.connect(TEST_DB) as conn:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(articles)").fetchall()}
+    assert "summary" in cols
+    feedback_store.register_message(777, {"title": "T", "url": "u", "source": "s",
+                                          "category": "c", "relevance_score": 1}, summary="x")
+    assert feedback_store.get_article_by_message(777)["summary"] == "x"
+    print("✅ test_old_schema_migration passed")
+
+
 if __name__ == "__main__":
     setup_module()
     test_empty_state()
     test_register_and_summary()
     test_multiple_articles()
     test_dedupe_urls()
+    test_summary_column_and_lookup()
+    test_get_article_by_message_unknown_id()
+    test_old_schema_migration()
     teardown_module()
     print("\n🎉 All feedback_store tests passed!")

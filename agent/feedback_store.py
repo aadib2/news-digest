@@ -9,7 +9,7 @@ import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 from collections import Counter
 from contextlib import contextmanager
 
@@ -62,6 +62,7 @@ def _ensure_schema():
                 source TEXT,
                 category TEXT,
                 relevance_score INTEGER,
+                summary TEXT NOT NULL DEFAULT '',
                 sent_at TEXT DEFAULT (datetime('now'))
             )
         """)
@@ -79,19 +80,32 @@ def _ensure_schema():
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_articles_url ON articles(url)
         """)
+    _migrate_schema()
+
+
+def _migrate_schema():
+    """Add columns introduced after initial release (idempotent)."""
+    with _db() as conn:
+        cols = {row["name"] for row in conn.execute("PRAGMA table_info(articles)").fetchall()}
+        if "summary" not in cols:
+            conn.execute("ALTER TABLE articles ADD COLUMN summary TEXT NOT NULL DEFAULT ''")
 
 
 # Initialize schema on module load
 _ensure_schema()
 
 
-def register_message(message_id: int, article: Dict):
-    """Map a Discord message ID to the article it represents."""
+def register_message(message_id: int, article: Dict, summary: str = ""):
+    """Map a Discord message ID to the article it represents.
+
+    `summary` is the Claude-generated digest summary (not the source preview).
+    """
     with _db() as conn:
         conn.execute(
             """
-            INSERT OR REPLACE INTO articles (message_id, title, url, source, category, relevance_score)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO articles
+                (message_id, title, url, source, category, relevance_score, summary)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 str(message_id),
@@ -100,8 +114,31 @@ def register_message(message_id: int, article: Dict):
                 article.get("source", ""),
                 article.get("category", ""),
                 article.get("relevance_score", 0),
+                summary,
             ),
         )
+
+
+def get_article_by_message(message_id: int) -> Optional[Dict]:
+    """Return the stored article metadata for a digest message, or None."""
+    with _db() as conn:
+        row = conn.execute(
+            """
+            SELECT title, url, source, category, relevance_score, summary
+            FROM articles WHERE message_id = ?
+            """,
+            (str(message_id),),
+        ).fetchone()
+    if row is None:
+        return None
+    return {
+        "title": row["title"],
+        "url": row["url"],
+        "source": row["source"],
+        "category": row["category"],
+        "relevance_score": row["relevance_score"],
+        "summary": row["summary"],
+    }
 
 
 def record_reaction(message_id: int, emoji: str):
