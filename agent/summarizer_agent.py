@@ -19,6 +19,33 @@ except Exception:
         _ANTHROPIC_ASYNC = False
 
 
+_WHY_MARKER = "why it matters:"
+
+
+def _strip_heading(text: str) -> str:
+    """Remove a leading 'Technical Summary' style heading and bold markers."""
+    if text.lower().startswith("technical summary"):
+        text = text[len("technical summary"):]
+    return text.strip().lstrip("*:-# \n").strip()
+
+
+def parse_summary(summary_text: str) -> tuple[str, str]:
+    """Split a summarizer output into (technical_summary, why_it_matters).
+
+    Tolerates bold/plain markers and a 'Technical Summary' heading.
+    If no 'why it matters' marker is found, the whole text is the
+    technical summary and the takeaway is empty.
+    """
+    if not summary_text:
+        return "", ""
+    idx = summary_text.lower().find(_WHY_MARKER)
+    if idx == -1:
+        return _strip_heading(summary_text), ""
+    technical = _strip_heading(summary_text[:idx].rstrip("*").rstrip())
+    why = summary_text[idx + len(_WHY_MARKER):].lstrip("* ").strip()
+    return technical, why
+
+
 class SummarizerAgent:
     def __init__(self):
         if AnthropicClient is None:
