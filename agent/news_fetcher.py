@@ -36,7 +36,7 @@ async def fetch_rss_feed(url: str, session: aiohttp.ClientSession):
 class TowardsDataScienceFetcher:
     RSS_URL = "https://towardsdatascience.com/feed"
 
-    async def fetch(self, session: aiohttp.ClientSession, days: int = 1) -> List[Dict]:
+    async def fetch(self, session: aiohttp.ClientSession, days: int = 3) -> List[Dict]:
         feed = await fetch_rss_feed(self.RSS_URL, session)
 
         cutoff = datetime.now(timezone.utc) - timedelta(days=days) # one day cutoff
@@ -172,7 +172,7 @@ class GitHubTrendingFetcher:
     BASE_URL = "https://github.com/trending"
     HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; TechDigestBot/1.0)"}
 
-    async def fetch(self, session: aiohttp.ClientSession, language: str = "python", since: str = "daily") -> List[Dict]:
+    async def fetch(self, session: aiohttp.ClientSession, language: str = "python", since: str = "weekly") -> List[Dict]:
         url = f"{self.BASE_URL}/{language}?since={since}"
         try:
             async with session.get(url, headers=self.HEADERS, timeout=10) as resp:
