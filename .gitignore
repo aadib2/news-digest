@@ -11,6 +11,9 @@ wheels/
 
 .env
 
+# logs
+logs/
+
 # database files
 *.db
 *.db-shm

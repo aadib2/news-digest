@@ -2,14 +2,16 @@
 test_notion_client.py
 Unit tests for the Notion client (mocked aiohttp) + optional live round-trip.
 Run: uv run python -m test.test_notion_client
-Live round-trip only runs if NOTION_TOKEN/NOTION_DATABASE_ID are set.
+Add --live to also run a round-trip against your real Notion database
+(uses NOTION_TOKEN/NOTION_DATABASE_ID from .env).
 """
 
 import os
+import sys
 
-# Test credentials so _config() passes without real secrets
-os.environ.setdefault("NOTION_TOKEN", "secret_test_token")
-os.environ.setdefault("NOTION_DATABASE_ID", "0" * 32)
+# Hard-set test credentials so exported shell variables can't leak into unit tests
+os.environ["NOTION_TOKEN"] = "secret_test_token"
+os.environ["NOTION_DATABASE_ID"] = "0" * 32
 
 import aiohttp
 
@@ -62,11 +64,11 @@ def test_build_properties():
     props = build_properties(ARTICLE)
     assert props["Title"]["title"][0]["text"]["content"] == ARTICLE["title"]
     assert props["Article Link"]["url"] == ARTICLE["url"]
-    assert props["Source"]["rich_text"][0]["text"]["content"] == "HackerNews"
+    assert props["Source"]["select"]["name"] == "Hacker News"
     assert props["Category"]["select"]["name"] == "ML/AI"
     assert props["Technical Summary"]["rich_text"][0]["text"]["content"] == "Linear attention runs in O(n)."
     assert props["Why It Matters"]["rich_text"][0]["text"]["content"] == "Cheaper inference."
-    assert props["Status"]["status"]["name"] == "to read"
+    assert props["Status"]["select"]["name"] == "To Read"
     assert props["Date Added"]["date"]["start"]
     print("✅ test_build_properties passed")
 
@@ -75,6 +77,12 @@ def test_build_properties_unknown_category_omits_key():
     article = dict(ARTICLE, category="")
     assert "Category" not in build_properties(article)
     print("✅ test_build_properties_unknown_category_omits_key passed")
+
+
+def test_build_properties_unmapped_source_omits_key():
+    article = dict(ARTICLE, source="Some New Source")
+    assert "Source" not in build_properties(article)
+    print("✅ test_build_properties_unmapped_source_omits_key passed")
 
 
 def test_create_reading_entry_sends_correct_request():
@@ -135,7 +143,7 @@ def live_round_trip():
     """Creates a clearly-marked test page, checks dedup, then archives it."""
     import asyncio
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)  # replace the hard-set test creds with the real ones
 
     async def run():
         async with aiohttp.ClientSession() as s:
@@ -161,12 +169,12 @@ def live_round_trip():
 if __name__ == "__main__":
     test_build_properties()
     test_build_properties_unknown_category_omits_key()
+    test_build_properties_unmapped_source_omits_key()
     test_create_reading_entry_sends_correct_request()
     test_create_reading_entry_raises_on_error()
     test_url_exists()
     test_not_configured()
     print("\n🎉 All notion_client tests passed!")
-    if os.getenv("NOTION_TOKEN", "").startswith("secret_") and \
-       os.getenv("NOTION_TOKEN") != "secret_test_token":
+    if "--live" in sys.argv:
         print("\n— Live round-trip (real Notion) —")
         live_round_trip()

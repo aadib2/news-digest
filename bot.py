@@ -26,6 +26,8 @@ import agent.feedback_store as feedback_store
 from agent.news_fetcher import NewsFetcher
 from agent.curator_agent import CuratorAgent
 from agent.summarizer_agent import SummarizerAgent
+import agent.notion_client as notion_client
+from agent.notion_client import NotionNotConfigured
 import aiohttp
 
 # ─────────────────────────────────────────────
@@ -86,6 +88,78 @@ async def on_close():
     print("[Bot] Scheduler shut down")
 
 
+SAVE_BUTTON_ID = "news-digst:save-to-notion"
+
+# we will create a class here for the "save to notion" integration
+class SaveToNotionView(discord.ui.View):
+    """Enables us to have a persistent 'Save to Notion' button attached to each digest article."""
+
+    def __init__(self, *, saved: bool = False):
+        super().__init__(timeout=None)
+
+        for child in self.children:
+            if getattr(child, "custom_id", None) == SAVE_BUTTON_ID:
+                child.disabled = saved
+                child.label = "Saved ✓" if saved else "Save to Notion"
+
+    @discord.ui.button(
+        label="Save to Notion",
+        emoji="🔖",
+        style=discord.ButtonStyle.gray,
+        custom_id=SAVE_BUTTON_ID,
+    )
+    async def save_to_notion(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Save the article behind this message to the Notion reading list / table."""
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
+        # first check if the article exists in the SQL DB
+        article = feedback_store.get_article_by_message(interaction.message.id)
+
+        if article is None:
+            await interaction.followup.send(
+                "Couldn't find this article's metadata. It may predate the Notion feature.",
+                ephemeral=True,
+            )
+            return
+
+        # Articles posted before the summary column existed have a blank summary —
+        # recover it from the embed it was originally posted in.
+        if not article.get("summary") and interaction.message.embeds:
+            article["summary"] = interaction.message.embeds[0].description or ""
+
+        try:
+            if await notion_client.url_exists(aiohttp_session, article["url"]): # has this article been added to the reading list alr?
+                await interaction.message.edit(view=SaveToNotionView(saved=True))
+                feedback_store.record_reaction(interaction.message.id, "🔖")
+                await interaction.followup.send(
+                    "Already in your Notion reading list ✓", ephemeral=True
+                )
+                return
+
+            # if it doesn't already exists then save it!
+            await notion_client.create_reading_entry(aiohttp_session, article)
+            feedback_store.record_reaction(interaction.message.id, "🔖")
+            await interaction.message.edit(view=SaveToNotionView(saved=True))
+            await interaction.followup.send(
+                "Saved to your Notion reading list ✓", ephemeral=True
+            )
+
+            print(f"[Notion] Saved: {article['title'][:60]}")
+        except NotionNotConfigured:
+            await interaction.followup.send(
+                "Notion isn't configured — set NOTION_TOKEN and "
+                "NOTION_DATABASE_ID in .env and restart.",
+                ephemeral=True,
+            )
+        except Exception as e:
+            print(f"[Notion] Error saving article: {e}")
+            await interaction.followup.send(
+                f"Couldn't save to Notion ({str(e)[:150]}). Try again.",
+                ephemeral=True,
+            )
+
+
 # ─────────────────────────────────────────────
 # Core: build and send the digest
 # ─────────────────────────────────────────────
@@ -98,7 +172,7 @@ async def send_digest(channel: discord.TextChannel):
         description=(
             "Your daily curated digest across **AI/ML**, **Data Science**, "
             "**Software Engineering**, and **General Tech**.\n\n"
-            "React with 👍 upvote · 👎 downvote · 🔖 save"
+            "React with 👍 upvote · 👎 downvote · 🔖 save — or use 🔖 **Save to Notion** to add to your reading list"
         ),
         color=discord.Color.gold(),
         timestamp=datetime.now(timezone.utc),
@@ -151,14 +225,14 @@ async def send_digest(channel: discord.TextChannel):
         )
         embed.set_footer(text=f"Article {i} of {len(curated)}")
 
-        msg = await channel.send(embed=embed)
+        msg = await channel.send(embed=embed, view=SaveToNotionView())
 
         # Bot add reaction buttons (unnecessary now)
         # for emoji in ("👍", "👎", "🔖"):
         #     await msg.add_reaction(emoji)
 
-        # Store message → article mapping for feedback tracking
-        feedback_store.register_message(msg.id, article)
+        # Store message → article mapping for feedback tracking + persistent Notion saving
+        feedback_store.register_message(msg.id, article, summary=summary_text)
 
         await asyncio.sleep(0.5)  # Avoid rate limiting
 
@@ -219,6 +293,10 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
         feedback_store.record_reaction(reaction.message.id, emoji)
         print(f"[Feedback] {user.name} reacted {emoji} to message {reaction.message.id}")
 
+@bot.event
+async def setup_hook():
+    """Register persistent views before the gateway connects."""
+    bot.add_view(SaveToNotionView())
 
 # ─────────────────────────────────────────────
 # Slash commands
@@ -314,6 +392,11 @@ async def slash_help(interaction: discord.Interaction):
     embed.add_field(
         name="Reactions",
         value="👍 upvote  ·  👎 downvote  ·  🔖 save\nReactions help the bot learn your preferences over time.",
+        inline=False,
+    )
+    embed.add_field(
+        name="Save to Notion",
+        value="The button on each article saves it to the connected Notion reading list.",
         inline=False,
     )
     embed.set_footer(text=f"Digest sent daily at {DIGEST_HOUR:02d}:00 AM PT")
