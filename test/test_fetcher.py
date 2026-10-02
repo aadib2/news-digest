@@ -20,7 +20,7 @@ async def test_towards_data_science():
 
     fetcher = TowardsDataScienceFetcher()
     async with aiohttp.ClientSession() as session:
-        articles = await fetcher.fetch(session, days=1)
+        articles = await fetcher.fetch(session, days=3)
 
     if articles:
         for i, article in enumerate(articles, 1):

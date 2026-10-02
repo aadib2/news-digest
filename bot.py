@@ -122,12 +122,6 @@ class SaveToNotionView(discord.ui.View):
                 ephemeral=True,
             )
             return
-
-        # Articles posted before the summary column existed have a blank summary —
-        # recover it from the embed it was originally posted in.
-        if not article.get("summary") and interaction.message.embeds:
-            article["summary"] = interaction.message.embeds[0].description or ""
-
         try:
             if await notion_client.url_exists(aiohttp_session, article["url"]): # has this article been added to the reading list alr?
                 await interaction.message.edit(view=SaveToNotionView(saved=True))
@@ -259,7 +253,7 @@ async def on_ready():
     # Schedule daily digest
     scheduler.add_job(
         _scheduled_digest,
-        CronTrigger(day_of_week='mon-fri', hour=DIGEST_HOUR, minute=0, timezone=scheduler.timezone),
+        CronTrigger(day_of_week='mon,wed,fri', hour=DIGEST_HOUR, minute=0, timezone=scheduler.timezone),
         id="daily_digest",
         replace_existing=True,
     )
