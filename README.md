@@ -30,6 +30,7 @@ news-digest/
 │   ├── test_summarizer.py      ← Unit tests for summary parsing
 │   ├── test_notion_client.py   ← Unit tests for the Notion payload/client
 │   └── test_notion_connection.py ← Prints your Notion DB schema (property names + types)
+└──
 ```
 
 ---
